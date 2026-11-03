@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emotional Weather Canvas - Ruixi Li</title>
+  <!-- p5.js and p5.sound core libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #111;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    #ui-panel {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 240px;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      color: #f8fafc;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    h2 {
+      margin: 0 0 5px 0;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+    }
+    p.subtitle {
+      margin: 0 0 15px 0;
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    .slider-group {
+      margin-bottom: 14px;
+    }
+    label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    input[type=range] {
+      width: 100%;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="ui-panel">
+    <h2>Weather Canvas</h2>
+    <p class="subtitle">Ruixi Li (ID: 14700140)</p>
+    
+    <div class="slider-group">
+      <label>Sleep Quality: <span id="sleep-val">70</span></label>
+      <input type="range" id="sleepSlider" min="0" max="100" value="70">
+    </div>
+    
+    <div class="slider-group">
+      <label>Stress Level: <span id="stress-val">30</span></label>
+      <input type="range" id="stressSlider" min="0" max="100" value="30">
+    </div>
+    
+    <div class="slider-group">
+      <label>Mood Score: <span id="mood-val">50</span></label>
+      <input type="range" id="moodSlider" min="0" max="100" value="50">
+    </div>
+  </div>
+
+  <script>
+    let rainParticles = [];
+    let sleepSlider, stressSlider, moodSlider;
+
+    function setup() {
+      createCanvas(windowWidth, windowHeight);
+      
+      // Select DOM elements
+      sleepSlider = select('#sleepSlider');
+      stressSlider = select('#stressSlider');
+      moodSlider = select('#moodSlider');
+
+      // Update text labels on UI
+      sleepSlider.input(() => select('#sleep-val').html(sleepSlider.value()));
+      stressSlider.input(() => select('#stress-val').html(stressSlider.value()));
+      moodSlider.input(() => select('#mood-val').html(moodSlider.value()));
+    }
+
+    function draw() {
+      let sleepVal = Number(sleepSlider.value());
+      let stressVal = Number(stressSlider.value());
+      let moodVal = Number(moodSlider.value());
+
+      // 1. Dynamic Background Hue (Mapped to Mood)
+      let r = map(moodVal, 0, 100, 15, 70);
+      let g = map(moodVal, 0, 100, 20, 100);
+      let b = map(moodVal, 0, 100, 35, 140);
+      background(r, g, b);
+
+      // 2. Sun Glow Aura (Mapped to Sleep Quality)
+      let glowRadius = map(sleepVal, 0, 100, 30, 220);
+      noStroke();
+      for (let radius = glowRadius; radius > 0; radius -= 12) {
+        let alpha = map(radius, 0, glowRadius, 120, 0);
+        fill(255, 215, 100, alpha);
+        ellipse(width / 2, height / 3, radius * 2);
+      }
+
+      // 3. Rain Particle Generator (Mapped to Stress Level)
+      let spawnCount = map(stressVal, 0, 100, 1, 15);
+      for (let i = 0; i < spawnCount; i++) {
+        rainParticles.push(new RainDrop(stressVal));
+      }
+
+      // Update and Render Rain Particles
+      for (let i = rainParticles.length - 1; i >= 0; i--) {
+        rainParticles[i].update();
+        rainParticles[i].display();
+        if (rainParticles[i].isDead()) {
+          rainParticles.splice(i, 1);
+        }
+      }
+
+      // 4. Storm Clouds Overlay (Driven by high stress)
+      if (stressVal > 40) {
+        let cloudAlpha = map(stressVal, 40, 100, 0, 180);
+        fill(20, 25, 35, cloudAlpha);
+        rect(0, 0, width, height);
+      }
+    }
+
+    // Particle Class representing Raindrops
+    class RainDrop {
+      constructor(stress) {
+        this.x = random(width);
+        this.y = random(-20, 0);
+        this.speed = map(stress, 0, 100, 4, 16);
+        this.len = map(stress, 0, 100, 8, 22);
+      }
+
+      update() {
+        this.y += this.speed;
+      }
+
+      display() {
+        stroke(180, 210, 255, 200);
+        strokeWeight(1.5);
+        line(this.x, this.y, this.x, this.y + this.len);
+      }
+
+      isDead() {
+        return this.y > height;
+      }
+    }
+
+    function windowResized() {
+      resizeCanvas(windowWidth, windowHeight);
+    }
+  </script>
+</body>
+</html>
