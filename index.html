@@ -4,9 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Emotional Weather Canvas - Ruixi Li</title>
-  <!-- p5.js and p5.sound core libraries -->
+
+  <!-- p5.js creative coding library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
+
   <style>
     body {
       margin: 0;
@@ -15,6 +16,7 @@
       background-color: #111;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
+
     #ui-panel {
       position: absolute;
       top: 20px;
@@ -24,125 +26,231 @@
       backdrop-filter: blur(8px);
       padding: 20px;
       border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
       color: #f8fafc;
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
+
     h2 {
       margin: 0 0 5px 0;
       font-size: 16px;
       letter-spacing: 0.5px;
     }
+
     p.subtitle {
       margin: 0 0 15px 0;
       font-size: 11px;
       color: #94a3b8;
     }
+
     .slider-group {
       margin-bottom: 14px;
     }
+
     label {
       display: flex;
       justify-content: space-between;
       font-size: 12px;
       margin-bottom: 4px;
     }
-    input[type=range] {
+
+    input[type="range"] {
       width: 100%;
       cursor: pointer;
     }
   </style>
 </head>
-<body>
 
+<body>
   <div id="ui-panel">
     <h2>Weather Canvas</h2>
-    <p class="subtitle">Ruixi Li (ID: 14700140)</p>
-    
+    <p class="subtitle">Ruixi Li</p>
+
     <div class="slider-group">
-      <label>Sleep Quality: <span id="sleep-val">70</span></label>
+      <label>
+        Sleep Quality:
+        <span id="sleep-val">70</span>
+      </label>
       <input type="range" id="sleepSlider" min="0" max="100" value="70">
     </div>
-    
+
     <div class="slider-group">
-      <label>Stress Level: <span id="stress-val">30</span></label>
+      <label>
+        Stress Level:
+        <span id="stress-val">30</span>
+      </label>
       <input type="range" id="stressSlider" min="0" max="100" value="30">
     </div>
-    
+
     <div class="slider-group">
-      <label>Mood Score: <span id="mood-val">50</span></label>
+      <label>
+        Mood Score:
+        <span id="mood-val">50</span>
+      </label>
       <input type="range" id="moodSlider" min="0" max="100" value="50">
     </div>
   </div>
 
   <script>
+    // Particle system
     let rainParticles = [];
-    let sleepSlider, stressSlider, moodSlider;
+
+    // Maximum number of active rain particles
+    const MAX_PARTICLES = 300;
+
+    // Particle generation timer
+    let rainTimer = 0;
+
+    let sleepSlider;
+    let stressSlider;
+    let moodSlider;
 
     function setup() {
       createCanvas(windowWidth, windowHeight);
-      
-      // Select DOM elements
+
       sleepSlider = select('#sleepSlider');
       stressSlider = select('#stressSlider');
       moodSlider = select('#moodSlider');
 
-      // Update text labels on UI
-      sleepSlider.input(() => select('#sleep-val').html(sleepSlider.value()));
-      stressSlider.input(() => select('#stress-val').html(stressSlider.value()));
-      moodSlider.input(() => select('#mood-val').html(moodSlider.value()));
+      // Update the displayed values when sliders change
+      sleepSlider.input(() => {
+        select('#sleep-val').html(sleepSlider.value());
+      });
+
+      stressSlider.input(() => {
+        select('#stress-val').html(stressSlider.value());
+      });
+
+      moodSlider.input(() => {
+        select('#mood-val').html(moodSlider.value());
+      });
     }
 
     function draw() {
-      let sleepVal = Number(sleepSlider.value());
-      let stressVal = Number(stressSlider.value());
-      let moodVal = Number(moodSlider.value());
+      const sleepVal = Number(sleepSlider.value());
+      const stressVal = Number(stressSlider.value());
+      const moodVal = Number(moodSlider.value());
 
-      // 1. Dynamic Background Hue (Mapped to Mood)
-      let r = map(moodVal, 0, 100, 15, 70);
-      let g = map(moodVal, 0, 100, 20, 100);
-      let b = map(moodVal, 0, 100, 35, 140);
-      background(r, g, b);
+      // 1. Background colour controlled by mood
+      const coldColour = color(15, 25, 50);
+      const warmColour = color(255, 170, 75);
 
-      // 2. Sun Glow Aura (Mapped to Sleep Quality)
-      let glowRadius = map(sleepVal, 0, 100, 30, 220);
+      const moodColour = lerpColor(
+        coldColour,
+        warmColour,
+        moodVal / 100
+      );
+
+      background(moodColour);
+
+      // 2. Sun glow controlled by sleep quality
+      const glowRadius = map(
+        sleepVal,
+        0,
+        100,
+        30,
+        220
+      );
+
       noStroke();
-      for (let radius = glowRadius; radius > 0; radius -= 12) {
-        let alpha = map(radius, 0, glowRadius, 120, 0);
+
+      for (
+        let radius = glowRadius;
+        radius > 0;
+        radius -= 12
+      ) {
+        const alpha = map(
+          radius,
+          0,
+          glowRadius,
+          120,
+          0
+        );
+
         fill(255, 215, 100, alpha);
-        ellipse(width / 2, height / 3, radius * 2);
+
+        ellipse(
+          width / 2,
+          height / 3,
+          radius * 2
+        );
       }
 
-      // 3. Rain Particle Generator (Mapped to Stress Level)
-      let spawnCount = map(stressVal, 0, 100, 1, 15);
-      for (let i = 0; i < spawnCount; i++) {
-        rainParticles.push(new RainDrop(stressVal));
+      // 3. Generate rain particles based on stress
+      // Higher stress creates rain more frequently.
+      const spawnInterval = map(
+        stressVal,
+        0,
+        100,
+        700,
+        80
+      );
+
+      rainTimer += deltaTime;
+
+      if (rainTimer >= spawnInterval) {
+        if (rainParticles.length < MAX_PARTICLES) {
+          rainParticles.push(new RainDrop(stressVal));
+        }
+
+        rainTimer = 0;
       }
 
-      // Update and Render Rain Particles
-      for (let i = rainParticles.length - 1; i >= 0; i--) {
-        rainParticles[i].update();
-        rainParticles[i].display();
-        if (rainParticles[i].isDead()) {
+      // 4. Update and render existing particles
+      for (
+        let i = rainParticles.length - 1;
+        i >= 0;
+        i--
+      ) {
+        const particle = rainParticles[i];
+
+        particle.update();
+        particle.display();
+
+        // Remove particles that have left the canvas
+        if (particle.isDead()) {
           rainParticles.splice(i, 1);
         }
       }
 
-      // 4. Storm Clouds Overlay (Driven by high stress)
+      // 5. Storm cloud overlay controlled by stress
       if (stressVal > 40) {
-        let cloudAlpha = map(stressVal, 40, 100, 0, 180);
+        const cloudAlpha = map(
+          stressVal,
+          40,
+          100,
+          0,
+          150
+        );
+
+        noStroke();
         fill(20, 25, 35, cloudAlpha);
         rect(0, 0, width, height);
       }
     }
 
-    // Particle Class representing Raindrops
+    // RainDrop class represents an individual raindrop
     class RainDrop {
       constructor(stress) {
         this.x = random(width);
         this.y = random(-20, 0);
-        this.speed = map(stress, 0, 100, 4, 16);
-        this.len = map(stress, 0, 100, 8, 22);
+
+        // Higher stress increases rain speed and length
+        this.speed = map(
+          stress,
+          0,
+          100,
+          4,
+          16
+        );
+
+        this.len = map(
+          stress,
+          0,
+          100,
+          8,
+          22
+        );
       }
 
       update() {
@@ -152,7 +260,13 @@
       display() {
         stroke(180, 210, 255, 200);
         strokeWeight(1.5);
-        line(this.x, this.y, this.x, this.y + this.len);
+
+        line(
+          this.x,
+          this.y,
+          this.x,
+          this.y + this.len
+        );
       }
 
       isDead() {
@@ -160,6 +274,7 @@
       }
     }
 
+    // Resize the canvas when the browser window changes
     function windowResized() {
       resizeCanvas(windowWidth, windowHeight);
     }
